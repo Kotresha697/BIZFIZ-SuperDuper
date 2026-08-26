@@ -2,14 +2,18 @@ import React from 'react'
 import { Link } from 'react-router-dom';
 
 const RequestTable = ({userData}) => {
+    // Same status codes as the backend ApplicationStatus enum:
+    // 0 Pending, 1 Approved, 2 Under Review, 3 Rejected.
     const statusSwitch = (status) => {
         switch (status) {
             case 1:
-                return  <span class="badge bg-soft-success text-success">Accepted</span>
-            case 2:
+                return  <span class="badge bg-soft-success text-success">Approved</span>
+            case 3:
                 return <span class="badge bg-soft-danger text-danger">Rejected</span>
+            case 2:
+                return <span class="badge bg-soft-warning text-warning">Under Review</span>
             case 0:
-                return <span class="badge bg-soft-warning text-warning">To Review</span>
+                return <span class="badge bg-soft-warning text-warning">Pending</span>
             default:
                 return 'Pending';
         }

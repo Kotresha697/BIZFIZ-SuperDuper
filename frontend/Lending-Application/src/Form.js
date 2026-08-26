@@ -4,7 +4,7 @@ import RaisedButton from "material-ui/RaisedButton";
 import SelectField from "material-ui/SelectField";
 import MenuItem from "material-ui/MenuItem";
 import AutoComplete from "material-ui/AutoComplete";
-import axios from 'axios';
+import api from "./api";
 import { stateData } from "./util/stateData";
 
 // const RF = () =>{
@@ -137,6 +137,8 @@ export default class Form extends React.Component {
     nameError: "",
     mobileNumber: "",
     mobileNumberError: "",
+    businessName: "",
+    businessNameError: "",
     typeOfBusiness: "",
     typeOfBusinessError: "",
     businessAddress: "",
@@ -151,6 +153,7 @@ export default class Form extends React.Component {
     amountAppliedError: "",
     data: stateData,
     url: "",
+    submitError: "",
     applyButtonText : "Apply"
   };
 
@@ -179,12 +182,18 @@ export default class Form extends React.Component {
       nameError: "",
       lastNameError: "",
       mobileNumberError: "",
+      businessNameError: "",
       typeOfBusinessError: ""
     };
 
     if (this.state.mobileNumber.length < 10) {
       isError = true;
       errors.mobileNumberError = "Please enter a valid mobileNumber number";
+    }
+
+    if (this.state.businessName.trim().length < 1) {
+      isError = true;
+      errors.businessNameError = "Please enter your business name";
     }
 
     if (this.state.typeOfBusiness.length < 1) {
@@ -223,36 +232,49 @@ export default class Form extends React.Component {
   onSubmit = async e => {
     e.preventDefault();
     const err = this.validate();
-    if (!err) {
-      this.setState({applyButtonText : 'Applying.....'})
-      this.props.onSubmit(this.state);
-      let responseData = {
-        name: this.state.name,
-        mobileNumber: this.state.mobileNumber,
-        typeOfBusiness: this.state.typeOfBusiness,
-        businessAddress: this.state.businessAddress,
-        businessDistrict: this.state.businessDistrict,
-        businessPinCode: this.state.businessPinCode,
-        businessState: this.state.businessState,
-        amountApplied: this.state.amountApplied,
-        applicationStatus: 0
+    if (err) {
+      return;
+    }
+
+    this.setState({ applyButtonText: "Applying.....", submitError: "" });
+
+    const payload = {
+      name: this.state.name,
+      mobileNumber: this.state.mobileNumber,
+      businessName: this.state.businessName.trim(),
+      typeOfBusiness: this.state.typeOfBusiness,
+      // Sector is the canonical name the scoring engine reads; it is the same
+      // value the user picked for type of business.
+      businessSector: this.state.typeOfBusiness,
+      businessAddress: this.state.businessAddress,
+      businessDistrict: this.state.businessDistrict,
+      businessPinCode: this.state.businessPinCode,
+      businessState: this.state.businessState,
+      // The amount the user actually typed — never a default.
+      amountApplied: Number(this.state.amountApplied),
+      applicationStatus: 0
+    };
+
+    try {
+      // The shared `api` instance attaches the client's Bearer token and points
+      // at the configured backend (no hardcoded URLs). Backend responds with
+      // { msg, userId }.
+      const response = await api.post("/api/borrower/submit", payload);
+
+      // Optional legacy hook — kept for backward compatibility if a parent
+      // still wants the raw submission.
+      if (this.props.onSubmit) {
+        this.props.onSubmit(this.state);
       }
-      console.log(responseData)
-      const response = await axios.post('https://bizfizbe.herokuapp.com/addborrower', responseData, {
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
-    this.setState({
-      url: response.data.consentUrl
-    })
-    console.log(response, response.data, "#####")
+
       // clear form
       this.setState({
         name: "",
         nameError: "",
         mobileNumber: "",
         mobileNumberError: "",
+        businessName: "",
+        businessNameError: "",
         typeOfBusiness: "",
         typeOfBusinessError: "",
         businessAddress: "",
@@ -264,15 +286,50 @@ export default class Form extends React.Component {
         businessState: "",
         businessStateError: "",
         amountApplied: "",
-        amountAppliedError: ""
+        amountAppliedError: "",
+        submitError: "",
+        applyButtonText: "Apply"
       });
-      window.location = response.data.consentUrl;
+
+      // Hand control back to the router so it can show the dashboard.
+      if (this.props.onSubmitSuccess) {
+        this.props.onSubmitSuccess(response.data);
+      }
+    } catch (submitError) {
+      console.error("Loan application submission failed:", submitError);
+      let message = "Something went wrong while submitting your application. Please try again.";
+      if (submitError && submitError.response && submitError.response.data && submitError.response.data.detail) {
+        var detail = submitError.response.data.detail;
+        if (typeof detail === "string") {
+          message = detail;
+        }
+      } else if (!submitError || !submitError.response) {
+        message = "Unable to connect to the server. Please ensure the backend is running.";
+      }
+      this.setState({ submitError: message, applyButtonText: "Apply" });
     }
   };
 
   render() {
     return (
      <form>
+        {this.state.submitError ? (
+          <div
+            role="alert"
+            style={{
+              width: "512px",
+              margin: "0 0 12px",
+              padding: "12px 14px",
+              borderRadius: "8px",
+              background: "#fee2e2",
+              border: "1px solid #fecaca",
+              color: "#991b1b",
+              fontSize: "13px"
+            }}
+          >
+            {this.state.submitError}
+          </div>
+        ) : null}
         <TextField
           name="name"
           hintText="Full name"
@@ -296,7 +353,16 @@ export default class Form extends React.Component {
           style={this.inputStyles}
         />
         <br />
-       
+        <TextField
+          name="businessName"
+          hintText="Business Name"
+          floatingLabelText="Business Name"
+          value={this.state.businessName}
+          onChange={e => this.change(e)}
+          errorText={this.state.businessNameError}
+          floatingLabelFixed
+          style={this.inputStyles}
+        />
         <br />
         <SelectField
           hintText="Type of Business"

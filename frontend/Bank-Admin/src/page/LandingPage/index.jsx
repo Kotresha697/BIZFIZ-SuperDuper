@@ -32,7 +32,7 @@ const LandingPage = ({ handleAvailabilty, FetchHandleAvailabilty }) => {
           <li className="logo-title">BIZFIZ</li>
         
           <li className="nav-button action">
-            <Link to="/all-report">
+            <Link to="/admin-login">
             Bank Admin <i className="fa fa-long-arrow-right"></i>
             </Link>
           </li>

@@ -23,7 +23,7 @@ import { InsertEmoticonSharp } from '@mui/icons-material';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
 import Pdf from "react-to-pdf";
-import axios from 'axios';
+import adminApi from '../../api';
 const style = {
     position: 'absolute',
     top: '50%',
@@ -62,9 +62,27 @@ const getFirstLetter = (x) => {
     return x.charAt(0)
 }
 const getArrayListSector = (data) => {
-    return Object.keys(data).map(key => (` ${key} : ${data[key]} `));
+    return Object.keys(data || {}).map(key => (` ${key} : ${data[key]} `));
 }
+
+// Values that a stored application may legitimately not carry.
+const naValue = (value) => {
+    return (value === null || value === undefined || value === '') ? 'N/A' : value;
+}
+
+const naMoney = (value) => {
+    if (value === null || value === undefined || value === '') return 'N/A';
+    const n = Number(value);
+    if (isNaN(n)) return 'N/A';
+    return '₹ ' + n.toLocaleString('en-IN');
+}
+
 const getIndicatorList = (list) => {
+    // The five regional/sector indicators come from the scoring engine. If
+    // scoring produced none, render nothing instead of crashing.
+    if (!list || list.length < 5) {
+        return [];
+    }
     let obj = [
         {
             name: list[0].name,
@@ -120,6 +138,8 @@ const Item = styled(Paper)(({ theme }) => ({
 
 
 const SideBox = (data) => {
+    const info = data.data || {};
+    const applicant = info['Name'] ? String(info['Name']) : '?';
     return (
         <div className="sidebar">
             <Grid
@@ -130,16 +150,15 @@ const SideBox = (data) => {
                 justifyContent="center"
 
             >
-                <Avatar sx={{ width: 116, height: 116 }}>{getFirstLetter(data.data['Name'])}</Avatar>
+                <Avatar sx={{ width: 116, height: 116 }}>{getFirstLetter(applicant)}</Avatar>
 
             </Grid>
             <Box mt={4}>
-                {console.log("332", data.data['Name'])}
                 <List >
                     {
-                        objctToArray(data.data).map((item, index) => {
+                        objctToArray(info).map((item, index) => {
                             return (
-                                <ListItem disablePadding><ListItemButton>
+                                <ListItem disablePadding key={index}><ListItemButton>
 
                                     <ListItemText primary={`⚡ ${item[0]} : ${item[1]}`} />
                                 </ListItemButton>
@@ -155,16 +174,20 @@ const SideBox = (data) => {
     )
 }
 
-const MainBox = ({ piedata, score, credit }) => {
+const MainBox = ({ piedata, score, scoreScale, credit, risk, recommendation, requested }) => {
+    const chartData = piedata || [];
+    const scaleText = scoreScale ? ` / ${scoreScale}` : '';
+    const scoreText = (score === null || score === undefined || score === '')
+        ? 'Score : N/A'
+        : `Score : ${score}${scaleText}`;
     return (
         <div className="mainbox">
             <Box sx={{ flexGrow: 1 }}>
                 <Grid container >
-                    {console.log(piedata, score, credit)}
                     <Grid item xs={6} style={{ borderRight: '0.1px solid grey', minHeight: '40vh' }}>
-                        <h5>Transactional Analysis : </h5>
-                        {piedata.map((item, index) => {
-                            return <Chip size="small" label={`${item.name} : ${item.value} `} style={{ marginRight: '10px' }} />
+                        <h5>Score Breakdown : </h5>
+                        {chartData.map((item, index) => {
+                            return <Chip key={index} size="small" label={`${item.name} : ${item.value} `} style={{ marginRight: '10px' }} />
                         })}
 
                         <>
@@ -173,7 +196,7 @@ const MainBox = ({ piedata, score, credit }) => {
                                 <Pie
                                     dataKey="value"
                                     isAnimationActive={false}
-                                    data={piedata}
+                                    data={chartData}
                                     // startAngle={180}
                                     // endAngle={0}
                                     cx="60%"
@@ -182,7 +205,7 @@ const MainBox = ({ piedata, score, credit }) => {
                                     fill="#8884d8"
                                     label
                                 />{
-                                    piedata.map((entry, index) => <Cell key={`cell-${index}`} strokeWidth={index === 2 ? 4 : 1} />)
+                                    chartData.map((entry, index) => <Cell key={`cell-${index}`} strokeWidth={index === 2 ? 4 : 1} />)
                                 }
 
                                 <Tooltip />
@@ -208,7 +231,7 @@ const MainBox = ({ piedata, score, credit }) => {
                                     < WorkIcon />
                                 </ListItemIcon>
                                     <ListItemText primary={
-                                        <Typography type="body2" style={{ color: 'black' }}>{`Score  :  ${score} / 500`}</Typography>
+                                        <Typography type="body2" style={{ color: 'black' }}>{`BizFiz ${scoreText}`}</Typography>
                                         } />
                                 </ListItemButton>
                                 </ListItem>
@@ -217,10 +240,37 @@ const MainBox = ({ piedata, score, credit }) => {
                                     < WorkIcon />
                                 </ListItemIcon>
                                     <ListItemText primary={
-                                          <Typography type="body2" style={{ color: 'black' }}>{`Max Allowed Credit : ₹ ${credit}`}</Typography>
+                                        <Typography type="body2" style={{ color: 'black' }}>{`Risk Level : ${naValue(risk)}`}</Typography>
                                         } />
-                                        
-                                         
+                                </ListItemButton>
+                                </ListItem>
+
+                                <ListItem disablePadding><ListItemButton> <ListItemIcon>
+                                    < WorkIcon />
+                                </ListItemIcon>
+                                    <ListItemText primary={
+                                        <Typography type="body2" style={{ color: 'black' }}>{`Recommendation : ${naValue(recommendation)}`}</Typography>
+                                        } />
+                                </ListItemButton>
+                                </ListItem>
+
+                                <ListItem disablePadding><ListItemButton> <ListItemIcon>
+                                    < WorkIcon />
+                                </ListItemIcon>
+                                    <ListItemText primary={
+                                        <Typography type="body2" style={{ color: 'black' }}>{`Requested Amount : ${naMoney(requested)}`}</Typography>
+                                        } />
+                                </ListItemButton>
+                                </ListItem>
+
+                                <ListItem disablePadding><ListItemButton> <ListItemIcon>
+                                    < WorkIcon />
+                                </ListItemIcon>
+                                    <ListItemText primary={
+                                          <Typography type="body2" style={{ color: 'black' }}>{`Max Allowed Credit : ${naMoney(credit)}`}</Typography>
+                                        } />
+
+
                                 </ListItemButton>
                                 </ListItem>
                             </List>
@@ -234,20 +284,25 @@ const MainBox = ({ piedata, score, credit }) => {
 }
 
 const MainBoxSecond = ({ account, indicators }) => {
+    const accountRows = objctToArray(account || {});
+    const indicatorRows = indicators || [];
     return (
         <div className="mainbox">
             <Box sx={{ flexGrow: 1 }}  >
                 <Grid container spacing={3}>
                     <Grid item xs={6} mt={1} style={{ minHeight: '40vh' }} >
-                        {console.log("23", account, indicators)}
                         <Box >
                             <h5>Account Details</h5>
                             <List >
                                 {
-                                    objctToArray(account).map((item, index) => {
+                                    accountRows.length === 0 ? (
+                                        <ListItem disablePadding><ListItemButton>
+                                            <ListItemText primary={"⚡ Bank account data : N/A"} />
+                                        </ListItemButton>
+                                        </ListItem>
+                                    ) : accountRows.map((item, index) => {
                                         return (
-                                            <ListItem disablePadding><ListItemButton>
-                                                {console.log(item, index)}
+                                            <ListItem disablePadding key={index}><ListItemButton>
                                                 <ListItemText primary={`⚡ ${item[0]} : ${item[1]}`} />
                                             </ListItemButton>
                                             </ListItem>
@@ -269,10 +324,10 @@ const MainBoxSecond = ({ account, indicators }) => {
                         <Box >
                             <h3>Indicators </h3>
                             <List >
-                                {indicators.map((item, index) => {
+                                {indicatorRows.map((item, index) => {
                                     const r = item['rating'];
                                     return (
-                                        <Box p={1}>
+                                        <Box p={1} key={index}>
                                             <Typography ml={2} mb={1} style={{fontWeight: 'bold'}}> {`${item['name']} (${r.toString()})`}</Typography>
                                             <Progressbar percentage={item['rating']} /></Box>
                                     )
@@ -299,65 +354,53 @@ const FullReport = ({ reportData,reportId }) => {
     const [allowedCredit, setAllowedCredit] = React.useState('');
     const [acceptText, setAcceptText] = React.useState('Submit')
     const [rejectText, setRejectText] = React.useState('Reject')
-    const [haltText, setHaltText] = React.useState('Halt')
+    const [reviewText, setReviewText] = React.useState('Under Review')
 
     const handleOpen = (data) => {
         setOpen(true);
-        setAllowedCredit(data)
+        // Pre-fills with the eligible amount the scoring engine calculated; the
+        // admin can override it before approving.
+        setAllowedCredit(data === null || data === undefined ? '' : data)
 
+    }
+
+    // Canonical decision endpoint. status: approve | reject | review.
+    // The backend stores applicationStatus + amountApproved.
+    const submitDecision = (status, amount, setText, busyText, idleText) => {
+        setText(busyText);
+        adminApi.post("/api/admin/update-status", {
+            userId: reportId,
+            status: status,
+            approvedAmount: Number(amount) || 0
+        })
+            .then(() => {
+                window.location = '/all-report'
+            })
+            .catch((err) => {
+                const detail = err && err.response && err.response.data ? err.response.data.detail : null;
+                window.alert(typeof detail === 'string' ? detail : 'Unable to update the application status.');
+                setText(idleText)
+            })
     }
 
     const handleAcceptSubmit = () => {
-        let v = allowedCredit;
-        setAcceptText('Submitting...')
-      
-        const apiUrl = encodeURI(`https://bizfizbe.herokuapp.com/updateuser?userid=${reportId}&updateType=accept&approvedAmount=${v}`);
-        console.log(apiUrl);
-        
-        axios.get(apiUrl)
-            .then((res)=>{
-                    window.location='/all-report'
-            })
-            .catch((err)=>{
-                window.alert('unable to update');
-                setAcceptText('Submit')
-            })
-
+        // An approval must carry a real sanctioned amount.
+        if (!(Number(allowedCredit) > 0)) {
+            window.alert('Enter the amount to sanction before approving.');
+            return;
+        }
+        submitDecision('approve', allowedCredit, setAcceptText, 'Submitting...', 'Submit')
     }
 
     const handleRejectSubmit = () => {
-        let v = allowedCredit;
-        setRejectText('Rejecting...')
-        const apiUrl = encodeURI(`https://bizfizbe.herokuapp.com/updateuser?userid=${reportId}&updateType=reject&approvedAmount=0`);
-        console.log(apiUrl);
-        axios.get(apiUrl)
-            .then((res)=>{
-                    window.location='/all-report'
-            })
-            .catch((err)=>{
-                window.alert('unable to update');
-                setRejectText('Reject')
-            })
-
+        submitDecision('reject', 0, setRejectText, 'Rejecting...', 'Reject')
     }
 
-    const handleHandleSubmit = () => {
-        let v = allowedCredit;
-        setHaltText('Halting...')
-        const apiUrl = encodeURI(`https://bizfizbe.herokuapp.com/updateuser?userid=${reportId}&updateType=halt&approvedAmount=${v}`);
-        console.log(apiUrl);
-        axios.get(apiUrl)
-            .then((res)=>{
-                    window.location='/all-report'
-            })
-            .catch((err)=>{
-                window.alert('unable to update');
-                setHaltText('Halt')
-            })
-
+    const handleReviewSubmit = () => {
+        submitDecision('review', 0, setReviewText, 'Updating...', 'Under Review')
     }
 
-   
+
     const handleClose = () => setOpen(false);
 
     return (
@@ -379,7 +422,11 @@ const FullReport = ({ reportData,reportId }) => {
                                 style={{ minHeight: '40vh' }}>
                                 <MainBox piedata={reportData['transactionalAnalysis']}
                                     score={reportData['score']}
-                                    credit={reportData['allowedCredit']} />
+                                    scoreScale={reportData['scoreScale']}
+                                    credit={reportData['allowedCredit']}
+                                    risk={reportData['riskCategory']}
+                                    recommendation={reportData['recommendation']}
+                                    requested={reportData['requestedAmount']} />
 
                             </Item>
                             <br />
@@ -402,6 +449,7 @@ const FullReport = ({ reportData,reportId }) => {
                                     getIndicatorList(reportData['indicators']).map((item, index) => {
                                         return (
                                             <SectorCard
+                                                key={index}
                                                 name={item.name}
                                                 rating={item.rating}
                                                 listTitle={item.listTitle}
@@ -441,9 +489,9 @@ const FullReport = ({ reportData,reportId }) => {
                     <Button variant="contained" color="error" onClick={handleRejectSubmit}>
                         {rejectText}
                             </Button>
-                     <Button variant="contained" color="warning" onClick={handleHandleSubmit}>
-                        {haltText}
-                            </Button>       
+                     <Button variant="contained" color="warning" onClick={handleReviewSubmit}>
+                        {reviewText}
+                            </Button>
                     <Button variant="contained" color="success" onClick={() => handleOpen(reportData['allowedCredit'])}>
                         Accept
                             </Button>

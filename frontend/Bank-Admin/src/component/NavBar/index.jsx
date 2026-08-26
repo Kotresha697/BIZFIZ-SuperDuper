@@ -6,18 +6,23 @@ import Typography from '@mui/material/Typography';
 
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { clearAdminAuth } from '../../api';
 import './index.css'
 
 export default function NavBar({ title, showBackIcon }) {
   const backHome = () => {
     window.location = "/all-report";
   }
+  const handleLogout = () => {
+    clearAdminAuth();
+    window.location = "/admin-login";
+  }
   return (
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-0 py-3">
       <div class="container-xl">
 
         <a class="navbar-brand d-flex" href="#">
-        
+
           {
             showBackIcon && (
               <button class="btn btn-sm btn-outline-light rounded-circle mx-3 " onClick={backHome}>
@@ -25,16 +30,25 @@ export default function NavBar({ title, showBackIcon }) {
               </button>
             )
           }
-     
-         
-         
+
+
+
           <div className=" nav-title">  {title}</div>
         </a>
 
-    <a href="/" class="d-flex align-items-lg-center mt-3 mt-lg-0">
+    <div className="d-flex align-items-lg-center mt-3 mt-lg-0">
+    <a href="/" class="d-flex align-items-lg-center">
     <img src="https://i.ibb.co/6vYxk8n/logo.png" class="h-8" alt="..."></img>
     <p class="h6 mx-2 " style={{color:'white',paddingTop:'5px'}}>BIZFIZ</p>
   </a>
+    <button
+      type="button"
+      onClick={handleLogout}
+      className="btn btn-sm btn-outline-light mx-3"
+    >
+      Log out
+    </button>
+  </div>
 
       </div>
     </nav>

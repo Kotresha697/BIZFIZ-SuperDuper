@@ -2,10 +2,7 @@ import * as React from 'react';
 
 import './index.css'
 
-export default function NavBar({ title}) {
-  const backHome = () => {
-    window.location = "/";
-  }
+export default function NavBar({ title, authed, onLogout }) {
   return (
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
@@ -15,6 +12,26 @@ export default function NavBar({ title}) {
           <span className="mx-1 " style={{paddingTop:'5px'}}>BIZFIZ</span>
           <div className=" nav-title  mx-auto">  {title}</div>
         </div>
+
+        {authed ? (
+          <button
+            type="button"
+            onClick={onLogout}
+            style={{
+              flexShrink: 0,
+              border: 0,
+              borderRadius: '8px',
+              padding: '8px 14px',
+              color: '#fff',
+              background: '#4f46e5',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            Log out
+          </button>
+        ) : null}
 
       </div>
     </nav>
