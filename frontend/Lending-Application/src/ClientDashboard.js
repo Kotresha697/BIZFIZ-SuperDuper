@@ -59,6 +59,57 @@ function StatusBadge({ status }) {
   return <span className={"status-badge " + style}>{label}</span>;
 }
 
+// Compact at-a-glance counts computed entirely from the already-loaded list
+// (no extra API call). Real numbers only — nothing is defaulted or invented.
+function SummaryCards({ applications }) {
+  const countBy = (status) => applications.filter((a) => a.applicationStatus === status).length;
+  const cards = [
+    { label: "Total", value: applications.length, color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Pending", value: countBy(0), color: "#1d4ed8", bg: "#dbeafe" },
+    { label: "Under Review", value: countBy(2), color: "#92400e", bg: "#fef3c7" },
+    { label: "Approved", value: countBy(1), color: "#166534", bg: "#dcfce7" },
+    { label: "Rejected", value: countBy(3), color: "#991b1b", bg: "#fee2e2" }
+  ];
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        margin: "24px 0 4px"
+      }}
+    >
+      {cards.map((c) => (
+        <div
+          key={c.label}
+          style={{
+            flex: "1 1 120px",
+            minWidth: "120px",
+            padding: "16px 18px",
+            borderRadius: "12px",
+            background: c.bg,
+            border: "1px solid rgba(15,23,42,.06)"
+          }}
+        >
+          <div style={{ fontSize: "26px", fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.value}</div>
+          <div
+            style={{
+              marginTop: "6px",
+              fontSize: "11px",
+              fontWeight: 800,
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+              color: "#475569"
+            }}
+          >
+            {c.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ClientDashboard({ onNewApplication, onLogout }) {
   const [applications, setApplications] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -161,7 +212,9 @@ export default function ClientDashboard({ onNewApplication, onLogout }) {
           <button type="button" onClick={onNewApplication}>Apply for a loan</button>
         </div>
       ) : (
-        <div className="dashboard-grid">
+        <React.Fragment>
+          <SummaryCards applications={applications} />
+          <div className="dashboard-grid">
           <div className="applications-panel">
             <h3>MY APPLICATIONS ({applications.length})</h3>
             {applications.map((app) => (
@@ -212,6 +265,7 @@ export default function ClientDashboard({ onNewApplication, onLogout }) {
             )}
           </div>
         </div>
+        </React.Fragment>
       )}
     </div>
   );

@@ -1,6 +1,13 @@
 from typing import Dict, Any, List
-from . import pulse_service
-from .ratings import competitor_analysis, oppurtunity_rating, sectoral_analysis, relative_prosperity, ease_of_business
+# Support both launch styles (mirrors backend/main.py):
+#   * package style  ->  `uvicorn backend.main:app`  (from the repo root)
+#   * module style   ->  `uvicorn main:app`          (from inside backend/)
+try:
+    from . import pulse_service
+    from .ratings import competitor_analysis, oppurtunity_rating, sectoral_analysis, relative_prosperity, ease_of_business
+except ImportError:  # pragma: no cover - fallback when imported as a top-level module
+    import pulse_service
+    from ratings import competitor_analysis, oppurtunity_rating, sectoral_analysis, relative_prosperity, ease_of_business
 
 # Configurable Weights for BizFiz Business Sensitive Scoring Engine
 SCORING_WEIGHTS = {

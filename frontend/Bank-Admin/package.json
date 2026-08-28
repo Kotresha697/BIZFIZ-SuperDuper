@@ -14,7 +14,7 @@
     "@webpixels/css": "^1.1.92",
     "ajv": "^8.18.0",
     "axios": "^1.13.6",
-    "bootstrap": "^5.1.3",
+    "bootstrap": "5.2.3",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "react": "^17.0.2",

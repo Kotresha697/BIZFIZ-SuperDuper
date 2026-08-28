@@ -49,7 +49,11 @@ app.add_middleware(
 class BorrowerModel(BaseModel):
     name : str
     mobileNumber : str
-    typeOfBusiness : str
+    # Legacy sector field. `businessSector` is the canonical name (section 12);
+    # this is kept optional so old /addborrower payloads and the enhanced submit
+    # (which sends businessSector) both validate. The submit endpoint keeps the
+    # two in sync so legacy readers (/all, /userinfo) never see a missing key.
+    typeOfBusiness : Optional[str] = None
     businessAddress : str
     businessState : str
     businessDistrict : str
@@ -58,11 +62,25 @@ class BorrowerModel(BaseModel):
     amountApproved : Optional[int] = 0
     consentId : Optional[str] = None
     sessionId : Optional[str] = None
-    applicationStatus : int
+    # Server forces this to 0 (Pending) on submit; never trusted from the client.
+    applicationStatus : Optional[int] = 0
     # Canonical business identity fields. Optional so the legacy /addborrower
     # payload keeps validating; the canonical submit endpoint fills them in.
     businessName : Optional[str] = None
     businessSector : Optional[str] = None
+    # --- Enhanced application fields (section 12 canonical names) -------------
+    # These MUST be declared: pydantic v1 silently drops undeclared fields, which
+    # previously meant the user's real revenue / years / digital-% never reached
+    # MongoDB and the scoring engine always fell back to hardcoded defaults.
+    email : Optional[str] = None
+    businessCategory : Optional[str] = None
+    yearsInBusiness : Optional[int] = None
+    monthlyRevenue : Optional[int] = None
+    monthlyTransactionCount : Optional[int] = None
+    averageTransactionValue : Optional[int] = None
+    digitalPaymentPercentage : Optional[float] = None
+    purposeOfLoan : Optional[str] = None
+    tenureMonths : Optional[int] = None
 
 class ApplicationStatus(enum.Enum):
     newApplication = 0
@@ -682,11 +700,19 @@ def submit_borrower_application(borrower: BorrowerModel = Body(...), current_use
     doc = jsonable_encoder(borrower)
     doc['businessState'] = doc['businessState'].lower()
     doc['businessDistrict'] = doc['businessDistrict'].lower()
-    # Sector is the canonical name for the business category. The form's
-    # existing typeOfBusiness value is the source when sector is not sent.
+    # Sector is the canonical name for the business category. Keep the legacy
+    # typeOfBusiness field and the canonical businessSector in sync in BOTH
+    # directions so the scoring engine (reads businessSector) and the legacy
+    # endpoints (/all, /userinfo read typeOfBusiness) always have a value.
     if not doc.get('businessSector'):
         doc['businessSector'] = doc.get('typeOfBusiness')
+    if not doc.get('typeOfBusiness'):
+        doc['typeOfBusiness'] = doc.get('businessSector')
     doc['createdAt'] = datetime.utcnow()
+    # A new application is always Pending (0). Never trusted from the client body.
+    doc['applicationStatus'] = ApplicationStatus.newApplication.value
+    # No decision has been made yet, so there is no approved amount.
+    doc['amountApproved'] = 0
     # Ownership is taken from the authenticated token, never from the request body.
     doc['clientId'] = current_user["sub"]
     result = db["borrowers"].insert_one(doc)
@@ -708,6 +734,45 @@ def submit_borrower_application(borrower: BorrowerModel = Body(...), current_use
 def client_applications(current_user=Depends(auth.get_client_user)):
     borrowers = db["borrowers"].find({"clientId": current_user["sub"]})
     return _summaries_with_analyses(borrowers)
+
+
+@app.get('/api/client/application/{userId}')
+def client_application_detail(userId: str, current_user=Depends(auth.get_client_user)):
+    """Detail view of a SINGLE application, scoped to its owner.
+
+    Ownership is enforced from the JWT: a client can never read another client's
+    application by changing the id in the URL (section 36/42). A borrower that
+    exists but belongs to someone else returns 404 (not 403) so the endpoint does
+    not confirm the existence of other users' application ids.
+    """
+    try:
+        borrower = db["borrowers"].find_one(
+            {"_id": ObjectId(userId)}, {"consentId": False, "sessionId": False}
+        )
+    except Exception:
+        borrower = None
+    if not borrower or borrower.get("clientId") != current_user["sub"]:
+        raise HTTPException(status_code=404, detail="Application not found.")
+
+    analysis = _analysis_for(userId) or {}
+    summary = _borrower_summary(borrower, analysis)
+    summary["applicationStatus"] = borrower.get("applicationStatus")
+    summary["statusLabel"] = APPLICATION_STATUS_LABELS.get(borrower.get("applicationStatus"))
+    # Extra stored fields the list summary does not carry, real values only.
+    summary["email"] = borrower.get("email")
+    summary["businessCategory"] = borrower.get("businessCategory")
+    summary["yearsInBusiness"] = borrower.get("yearsInBusiness")
+    summary["monthlyRevenue"] = borrower.get("monthlyRevenue")
+    summary["monthlyTransactionCount"] = borrower.get("monthlyTransactionCount")
+    summary["averageTransactionValue"] = borrower.get("averageTransactionValue")
+    summary["digitalPaymentPercentage"] = borrower.get("digitalPaymentPercentage")
+    summary["purposeOfLoan"] = borrower.get("purposeOfLoan") or borrower.get("loanPurpose")
+    summary["tenureMonths"] = borrower.get("tenureMonths")
+    summary["recommendation"] = analysis.get("recommendation")
+    summary["scoreBreakdown"] = analysis.get("scoreBreakdown", {})
+    summary["positiveFactors"] = analysis.get("positiveFactors", [])
+    summary["riskFactors"] = analysis.get("riskFactors", [])
+    return summary
 
 
 # --- Admin-protected APIs --------------------------------------------------
@@ -759,6 +824,18 @@ def _display(value, prefix=""):
     return value
 
 
+def _percent(value):
+    """Render a percentage without a trailing '.0' for whole numbers.
+    digitalPaymentPercentage is stored as a float, so 70 -> '70%', 72.5 -> '72.5%'."""
+    if value is None or value == "":
+        return "N/A"
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return "N/A"
+    return (f"{int(f)}%" if f == int(f) else f"{f}%")
+
+
 @app.get('/api/admin/analysis/{userId}')
 def admin_analysis(userId: str, current_user=Depends(auth.get_admin_user)):
     try:
@@ -789,18 +866,28 @@ def admin_analysis(userId: str, current_user=Depends(auth.get_admin_user)):
 
     # Real values only. Anything the application does not carry shows as N/A
     # instead of a placeholder figure.
+    digital_pct = borrower.get("digitalPaymentPercentage")
+    tenure = borrower.get("tenureMonths")
+    # Canonical purpose field is `purposeOfLoan`; `loanPurpose` is read only as a
+    # fallback for any older record that used that spelling.
+    purpose = borrower.get("purposeOfLoan") or borrower.get("loanPurpose")
     form_info = {
         "Name": _display(borrower.get("name")),
         "Business": _display(borrower.get("businessName")),
         "Sector": _display(sector),
+        "Category": _display(borrower.get("businessCategory")),
         "Phone": _display(borrower.get("mobileNumber")),
+        "Email": _display(borrower.get("email")),
         "Business Address": _display(borrower.get("businessAddress")),
         "Location": location,
-        "Monthly Revenue": _display(borrower.get("monthlyRevenue"), "₹"),
         "Years In Business": _display(borrower.get("yearsInBusiness")),
+        "Monthly Revenue": _display(borrower.get("monthlyRevenue"), "₹"),
+        "Monthly Transactions": _display(borrower.get("monthlyTransactionCount")),
+        "Avg Transaction Value": _display(borrower.get("averageTransactionValue"), "₹"),
+        "Digital Payment %": _percent(digital_pct),
         "Requested Amount": _display(borrower.get("amountApplied"), "₹"),
-        "Loan Purpose": _display(borrower.get("loanPurpose")),
-        "Tenure": _display(borrower.get("tenureMonths")),
+        "Loan Purpose": _display(purpose),
+        "Tenure": "N/A" if tenure in (None, "") else f"{tenure} months",
         "Status": APPLICATION_STATUS_LABELS.get(status_value, "N/A"),
         "BizFiz Score": _display(analysis.get("bizfizScore")),
         "Risk": _display(analysis.get("riskCategory")),
