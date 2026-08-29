@@ -10,14 +10,6 @@ const money = (value) =>
     ? "N/A"
     : "₹" + Number(value).toLocaleString();
 
-// BizFiz score comes from the backend scoring engine (0-100). Never defaulted.
-const score = (value) => {
-  if (value === null || value === undefined || value === "") return "N/A";
-  var n = Number(value);
-  if (isNaN(n)) return "N/A";
-  return n.toFixed(1) + " / 100";
-};
-
 // State / district are stored lower-cased by the backend; present them nicely.
 const titleCase = (value) => {
   if (!value) return "N/A";
@@ -164,8 +156,7 @@ export default function ClientDashboard({ onNewApplication, onLogout }) {
         ["Pincode", valueOrNA(selected.businessPinCode)],
         ["Amount requested", money(selected.amountApplied)],
         ["Amount approved", money(selected.amountApproved)],
-        ["BizFiz score", score(selected.bizfizScore)],
-        ["Risk level", valueOrNA(selected.riskCategory)],
+        ["Status", statusLabels[selected.applicationStatus] || "N/A"],
         ["Application date", formatDate(selected.applicationDate)]
       ]
     : [];

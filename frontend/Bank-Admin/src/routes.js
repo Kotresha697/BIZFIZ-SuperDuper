@@ -1,5 +1,4 @@
 import AllRequestPage from "./page/AllRequestPage";
-import LandingPage from "./page/LandingPage";
 import ReportPage from "./page/ReportPage";
 import AdminLoginPage from "./page/AdminLoginPage";
 
@@ -8,7 +7,7 @@ export const mainRoute = [
     {
         path: "/",
         exact: true,
-        component: LandingPage
+        component: AdminLoginPage
     },
     {
         path: "/admin-login",

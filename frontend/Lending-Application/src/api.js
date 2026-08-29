@@ -5,7 +5,7 @@ import axios from "axios";
 // REACT_APP_API_URL (see .env). No backend URLs are hardcoded elsewhere.
 export const API_BASE_URL =
   (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.trim()) ||
-  "http://127.0.0.1:8000";
+  "http://localhost:8000";
 
 // localStorage keys for the single, consistent client-token mechanism.
 export const CLIENT_TOKEN_KEY = "client_token";

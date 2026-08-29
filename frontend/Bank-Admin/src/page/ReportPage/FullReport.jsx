@@ -348,13 +348,29 @@ const MainBoxSecond = ({ account, indicators }) => {
     )
 }
 
+const DetailSections = ({ application, statusLabel, amountApproved }) => {
+    const value = (item) => naValue(item);
+    const section = (title, rows) => <div className="report-section"><h3>{title}</h3><div className="report-section-grid">{rows.map(([label, item]) => <div key={label}><span>{label}</span><strong>{value(item)}</strong></div>)}</div></div>;
+    return <div className="report-sections">
+        {section('Applicant', [['Name', application.name], ['Mobile', application.mobileNumber], ['Email', application.email]])}
+        {section('Business', [['Business Name', application.businessName], ['Sector', application.businessSector || application.typeOfBusiness], ['Category', application.businessCategory]])}
+        {section('Location', [['Address', application.businessAddress], ['State', application.businessState], ['District', application.businessDistrict], ['Pincode', application.businessPinCode]])}
+        {section('Financial', [['Monthly Revenue', naMoney(application.monthlyRevenue)], ['Monthly Transactions', application.monthlyTransactionCount], ['Average Transaction Value', naMoney(application.averageTransactionValue)], ['Digital Payment', application.digitalPaymentPercentage === null || application.digitalPaymentPercentage === undefined ? null : `${application.digitalPaymentPercentage}%`]])}
+        {section('Loan', [['Requested Amount', naMoney(application.amountApplied)], ['Purpose', application.purposeOfLoan || application.loanPurpose], ['Tenure', application.tenureMonths ? `${application.tenureMonths} months` : null]])}
+        {section('Application Status', [['Status', statusLabel], ['Application Date', application.createdAt ? new Date(application.createdAt).toLocaleDateString() : null]])}
+        {section('Admin Decision', [['Approved Amount', naMoney(amountApproved)]])}
+    </div>;
+}
+
 
 const FullReport = ({ reportData,reportId }) => {
     const [open, setOpen] = React.useState(false);
+    const [deleteOpen, setDeleteOpen] = React.useState(false);
     const [allowedCredit, setAllowedCredit] = React.useState('');
     const [acceptText, setAcceptText] = React.useState('Submit')
     const [rejectText, setRejectText] = React.useState('Reject')
     const [reviewText, setReviewText] = React.useState('Under Review')
+    const [deleteText, setDeleteText] = React.useState('Delete application')
 
     const handleOpen = (data) => {
         setOpen(true);
@@ -400,6 +416,22 @@ const FullReport = ({ reportData,reportId }) => {
         submitDecision('review', 0, setReviewText, 'Updating...', 'Under Review')
     }
 
+    const handleDelete = () => {
+        setDeleteOpen(true);
+    }
+
+    const confirmDelete = () => {
+        setDeleteText('Deleting...');
+        adminApi.delete(`/api/admin/application/${reportId}`).then(() => {
+            window.location = '/all-report';
+        }).catch((err) => {
+            const detail = err && err.response && err.response.data ? err.response.data.detail : null;
+            window.alert(typeof detail === 'string' ? detail : 'Unable to delete the application.');
+            setDeleteText('Delete application');
+            setDeleteOpen(false);
+        });
+    }
+
 
     const handleClose = () => setOpen(false);
 
@@ -416,6 +448,8 @@ const FullReport = ({ reportData,reportId }) => {
                                 <SideBox data={reportData['userFormSubmittedInfo']} /></Item>
                         </Grid>
                         <Grid item xs={9}>
+                            <DetailSections application={reportData.application || {}} statusLabel={reportData.statusLabel} amountApproved={reportData.amountApproved} />
+                            <Typography variant="h6" style={{ margin: '24px 0 10px' }}>BizFiz Analysis</Typography>
                             <Item direction="column"
                                 alignItems="center"
                                 justifyContent="center"
@@ -495,11 +529,32 @@ const FullReport = ({ reportData,reportId }) => {
                     <Button variant="contained" color="success" onClick={() => handleOpen(reportData['allowedCredit'])}>
                         Accept
                             </Button>
+                            <Button variant="outlined" color="error" onClick={handleDelete} disabled={deleteText === 'Deleting...'}>{deleteText}</Button>
 
                 </Grid>
 
             </Grid>
 
+            <Modal
+                open={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                aria-labelledby="delete-modal-title"
+            >
+                <Box sx={style}>
+                    <Typography id="delete-modal-title" variant="h6" component="h2">
+                        Delete Application?
+                    </Typography>
+                    <List dense>
+                        <ListItem><ListItemText primary="Applicant" secondary={naValue((reportData.application || {}).name)} /></ListItem>
+                        <ListItem><ListItemText primary="Business" secondary={naValue((reportData.application || {}).businessName)} /></ListItem>
+                        <ListItem><ListItemText primary="Application ID" secondary={reportId} /></ListItem>
+                    </List>
+                    <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Button variant="outlined" onClick={() => setDeleteOpen(false)} disabled={deleteText === 'Deleting...'}>Cancel</Button>
+                        <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleteText === 'Deleting...'}>{deleteText}</Button>
+                    </Box>
+                </Box>
+            </Modal>
             <Modal
                 open={open}
                 onClose={handleClose}

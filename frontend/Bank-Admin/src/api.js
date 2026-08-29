@@ -5,7 +5,7 @@ import axios from "axios";
 // (REACT_APP_API_URL). No backend URLs are hardcoded in components.
 export const API_BASE_URL =
   (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.trim()) ||
-  "http://127.0.0.1:8000";
+  "http://localhost:8000";
 
 // Sibling borrower portal (Lending-Application). Also configurable via env.
 export const USER_PORTAL_URL =

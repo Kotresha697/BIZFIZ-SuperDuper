@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
-import adminApi, { setAdminSession, isAdminAuthed } from "../../api";
+import adminApi, { setAdminSession, isAdminAuthed, USER_PORTAL_URL } from "../../api";
 
 // Bank-Admin login. Talks to the canonical backend admin auth API:
 //   POST /api/auth/admin/login -> { accessToken, admin: { username } }
@@ -177,7 +177,7 @@ const AdminLoginPage = () => {
         </form>
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <a href="/" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>
+          <a href={USER_PORTAL_URL} style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>
             ← Back to home
           </a>
         </div>

@@ -37,6 +37,11 @@ export default function NavBar({ title, showBackIcon }) {
         </a>
 
     <div className="d-flex align-items-lg-center mt-3 mt-lg-0">
+    <div className="admin-nav-links d-flex align-items-lg-center">
+    <a href="/all-report">Admin Dashboard</a>
+    <a href="/all-report#applications">Applications</a>
+    <a href="/all-report#analytics">Analytics</a>
+    </div>
     <a href="/" class="d-flex align-items-lg-center">
     <img src="https://i.ibb.co/6vYxk8n/logo.png" class="h-8" alt="..."></img>
     <p class="h6 mx-2 " style={{color:'white',paddingTop:'5px'}}>BIZFIZ</p>

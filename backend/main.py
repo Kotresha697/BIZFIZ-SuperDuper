@@ -718,22 +718,40 @@ def submit_borrower_application(borrower: BorrowerModel = Body(...), current_use
     result = db["borrowers"].insert_one(doc)
 
     # Score the application that was actually stored, and link ONE analysis to it.
+    # The result is persisted for the admin; it is deliberately NOT returned here.
     stored = dict(doc)
     stored['_id'] = result.inserted_id
-    analysis = _run_and_store_analysis(result.inserted_id, stored)
+    _run_and_store_analysis(result.inserted_id, stored)
 
+    # Business rule 12: the borrower must never see their BizFiz score or risk on
+    # submission. Return only the identifiers the success screen needs — the score
+    # lives behind the admin-only endpoints.
     return {
         "msg": "Borrower added successfully",
         "userId": str(result.inserted_id),
-        "bizfizScore": (analysis or {}).get("bizfizScore"),
-        "riskCategory": (analysis or {}).get("riskCategory"),
+        "amountApplied": doc.get("amountApplied"),
+        "applicationStatus": ApplicationStatus.newApplication.value,
     }
+
+
+# Keys produced by the scoring engine that the BORROWER must never see
+# (business rule 12). The admin endpoints keep them; only client-facing views are
+# stripped, so the borrower sees status and amounts but never their BizFiz score.
+_CLIENT_HIDDEN_KEYS = (
+    "bizfizScore", "riskCategory", "recommendation", "eligibleAmount",
+    "scoreBreakdown", "positiveFactors", "riskFactors",
+)
+
+
+def _client_safe(summary: dict) -> dict:
+    return {k: v for k, v in summary.items() if k not in _CLIENT_HIDDEN_KEYS}
 
 
 @app.get('/api/client/applications')
 def client_applications(current_user=Depends(auth.get_client_user)):
     borrowers = db["borrowers"].find({"clientId": current_user["sub"]})
-    return _summaries_with_analyses(borrowers)
+    # Strip scoring fields — the borrower must not see their BizFiz score/risk.
+    return [_client_safe(summary) for summary in _summaries_with_analyses(borrowers)]
 
 
 @app.get('/api/client/application/{userId}')
@@ -768,11 +786,9 @@ def client_application_detail(userId: str, current_user=Depends(auth.get_client_
     summary["digitalPaymentPercentage"] = borrower.get("digitalPaymentPercentage")
     summary["purposeOfLoan"] = borrower.get("purposeOfLoan") or borrower.get("loanPurpose")
     summary["tenureMonths"] = borrower.get("tenureMonths")
-    summary["recommendation"] = analysis.get("recommendation")
-    summary["scoreBreakdown"] = analysis.get("scoreBreakdown", {})
-    summary["positiveFactors"] = analysis.get("positiveFactors", [])
-    summary["riskFactors"] = analysis.get("riskFactors", [])
-    return summary
+    # Business rule 12: never expose the BizFiz score/risk/analysis to the borrower.
+    # _client_safe removes those keys; status and amounts remain visible.
+    return _client_safe(summary)
 
 
 # --- Admin-protected APIs --------------------------------------------------
@@ -967,6 +983,32 @@ def admin_update_status(payload: AdminUpdateStatusModel = Body(...), current_use
         "statusLabel": APPLICATION_STATUS_LABELS.get(status_value),
         "amountApproved": approved,
     }
+
+
+@app.delete('/api/admin/application/{userId}')
+def admin_delete_application(userId: str, current_user=Depends(auth.get_admin_user)):
+    """Admin-only hard delete of a single application.
+
+    Removes ONLY the borrower application and its one linked analysis
+    (analyses.userid == str(borrower._id), see _run_and_store_analysis). Unrelated
+    data — users, clients, financialData — is deliberately left untouched
+    (section 11: do not delete related data blindly). Requires admin auth, so a
+    normal client can never reach it.
+    """
+    try:
+        oid = ObjectId(userId)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Application not found.")
+    borrower = db["borrowers"].find_one({"_id": oid})
+    if not borrower:
+        raise HTTPException(status_code=404, detail="Application not found.")
+    deleted = db["borrowers"].delete_one({"_id": oid})
+    if deleted.deleted_count != 1:
+        raise HTTPException(status_code=404, detail="Application not found.")
+    # The analysis is keyed by the string form of the borrower id. Remove only
+    # analysis records directly linked to this application.
+    db["analyses"].delete_many({"userid": userId})
+    return {"msg": "Application deleted", "userId": userId}
 
 
 if __name__ == '__main__':

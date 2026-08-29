@@ -168,8 +168,17 @@ export default function Form({ onSubmitSuccess, onSubmit }) {
   };
 
   // ---- Success screen -----------------------------------------------------
+  // Business rule 12: the borrower must NOT see their BizFiz score or risk here.
+  // Only the application id, the amount they requested, and the pending status.
   if (result) {
-    const score = result.bizfizScore === null || result.bizfizScore === undefined ? "Pending" : Number(result.bizfizScore).toFixed(1) + " / 100";
+    const requested =
+      result.amountApplied === null || result.amountApplied === undefined || result.amountApplied === ""
+        ? values.amountApplied
+        : result.amountApplied;
+    const requestedText =
+      requested === null || requested === undefined || requested === "" || Number(requested) === 0
+        ? "N/A"
+        : "₹" + Number(requested).toLocaleString("en-IN");
     return (
       <div className="loan-application form-success">
         <div className="success-mark">✓</div>
@@ -182,12 +191,12 @@ export default function Form({ onSubmitSuccess, onSubmit }) {
             <dd>{result.userId || "N/A"}</dd>
           </div>
           <div>
-            <dt>BizFiz Score</dt>
-            <dd>{score}</dd>
+            <dt>Requested Amount</dt>
+            <dd>{requestedText}</dd>
           </div>
           <div>
-            <dt>Risk Category</dt>
-            <dd>{result.riskCategory || "Pending"}</dd>
+            <dt>Status</dt>
+            <dd>Pending</dd>
           </div>
         </dl>
         <div className="form-actions" style={{ justifyContent: "center" }}>

@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import api from "./api";
 import { setClientSession } from "./api";
 
+const ADMIN_PORTAL_URL =
+  (process.env.REACT_APP_ADMIN_PORTAL_URL && process.env.REACT_APP_ADMIN_PORTAL_URL.trim()) ||
+  "http://localhost:3001";
+
 // Borrower / client authentication screen for the Lending-Application portal.
 // Talks to the canonical backend auth APIs:
 //   POST /api/auth/client/register  -> { accessToken, client }
@@ -193,7 +197,7 @@ export default function ClientAuth({ onLoginSuccess }) {
           <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
             Bank employee or administrator?{" "}
             <a
-              href="http://localhost:3000"
+              href={ADMIN_PORTAL_URL}
               target="_blank"
               rel="noreferrer"
               style={{ fontWeight: 700, color: "#4f46e5" }}
