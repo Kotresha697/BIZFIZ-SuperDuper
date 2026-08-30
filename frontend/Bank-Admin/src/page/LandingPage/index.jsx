@@ -1,240 +1,248 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import "./LandingPage.css";
 
-//import Button from '../../components/Button'
-
-import "./index.scss";
-
-import headerImage from "../../assets/images/8432.png";
-
-import createPageImage from "../../assets/images/hiw1.svg"
-import shareLinkImage from "../../assets/images/hiw2.svg"
-import ConnectAllImage from "../../assets/images/hiw3.svg"
-
-
-
-import { Button } from "react-bootstrap";
-
-const LandingPage = ({ handleAvailabilty, FetchHandleAvailabilty }) => {
- 
-
+const LandingPage = () => {
+  const navigate = useNavigate();
 
   return (
-    <div className="Landing-Page">
-      {/* navbar */}
-      <nav className="navbar">
-        <ul className="nav" role="navigation">
-          <li className="logo">
-            <a href="#about">
-              <img className="logo" src={'https://i.ibb.co/r5YwMmr/logo-Imgur.png'} alt=" logo"></img>
-            </a>
-          </li>
-          <li className="logo-title">BIZFIZ</li>
-        
-          <li className="nav-button action">
-            <Link to="/admin-login">
-            Bank Admin <i className="fa fa-long-arrow-right"></i>
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="landing-page">
 
-      {/* header */}
+      {/* HERO SECTION */}
+      <main className="hero-section">
 
-      <section className="header">
-        <div className="header-container">
-          <div className="left-section">
-            <h1>New Age Lending System</h1>
+        {/* LEFT CONTENT */}
+        <section className="hero-content">
 
-            <div className="sub-title">
-              <h2>Backed By Intelligent Algorithm 🧠  </h2>
-              <div className="inner">
-                <span>
-                Checking Competition
-                  <br />
-                  Checking Feasibility
-                  <br />
-                  Checking Location
-                  
-                </span>
+          <div className="brand-badge">
+            <span className="brand-icon">BF</span>
+            <span>BIZFIZ</span>
+          </div>
+
+          <p className="hero-eyebrow">
+            SMART BUSINESS LENDING PLATFORM
+          </p>
+
+          <h1>
+            Business loans,
+            <br />
+            <span>made smarter.</span>
+          </h1>
+
+          <p className="hero-description">
+            BizFiz helps growing businesses apply for loans digitally,
+            understand their financial position, and receive data-driven
+            lending decisions through one connected platform.
+          </p>
+
+          <div className="hero-actions">
+            <button
+              className="primary-button"
+              onClick={() => navigate("/login")}
+            >
+              Apply for a Business Loan
+              <span>→</span>
+            </button>
+
+            <button
+              className="secondary-button"
+              onClick={() => navigate("/admin-login")}
+            >
+              Bank Admin Login
+            </button>
+          </div>
+
+          <div className="trust-row">
+            <div>
+              <strong>01</strong>
+              <span>Digital Application</span>
+            </div>
+
+            <div>
+              <strong>02</strong>
+              <span>Risk Assessment</span>
+            </div>
+
+            <div>
+              <strong>03</strong>
+              <span>Bank Decision</span>
+            </div>
+          </div>
+
+        </section>
+
+        {/* RIGHT VISUAL */}
+        <section className="hero-visual">
+
+          <div className="visual-glow"></div>
+
+          <div className="dashboard-card">
+
+            <div className="dashboard-header">
+              <div className="mini-brand">
+                <span>BF</span>
+                <div>
+                  <strong>BIZFIZ</strong>
+                  <small>BUSINESS LENDING</small>
+                </div>
+              </div>
+
+              <span className="secure-label">
+                ● Secure
+              </span>
+            </div>
+
+            <div className="dashboard-title">
+              <span>APPLICATION OVERVIEW</span>
+              <h3>Loan Application</h3>
+            </div>
+
+            <div className="application-profile">
+
+              <div className="profile-avatar">
+                A
+              </div>
+
+              <div>
+                <strong>Business Applicant</strong>
+                <p>MSME / Small Business</p>
+              </div>
+
+              <span className="status-badge">
+                Under Review
+              </span>
+
+            </div>
+
+            <div className="score-card">
+
+              <div>
+                <span>Business Health</span>
+                <strong>Good</strong>
+              </div>
+
+              <div className="score-circle">
+                <span>78</span>
+                <small>/100</small>
+              </div>
+
+            </div>
+
+            <div className="progress-section">
+              <div className="progress-label">
+                <span>Application progress</span>
+                <strong>75%</strong>
+              </div>
+
+              <div className="progress-bar">
+                <div></div>
               </div>
             </div>
 
-            <p>
-             Bank Admins click on TOP RIGHT 👆".<br/>
-             To apply for Loan "SEE BELOW 👇"
-            </p>
+            <div className="dashboard-bottom">
 
-            <div className="search">
-             
+              <div>
+                <small>Requested Amount</small>
+                <strong>₹5,00,000</strong>
+              </div>
 
-        
-              <Button className="searchButton" onClick={()=>{  window.open("https://bizfiz-lending-application.netlify.app/");}}>
-               <a target="_blank" href={"https://bizfiz-lending-application.netlify.app/"}>Open Lending Form -></a>  
-              </Button>
+              <div>
+                <small>Tenure</small>
+                <strong>24 Months</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* FLOATING CARD */}
+          <div className="floating-card floating-card-top">
+            <span className="floating-icon">✓</span>
+            <div>
+              <strong>Digital Process</strong>
+              <small>Fast & structured</small>
             </div>
           </div>
-          <div className="right-section">
-            <img
-              src={headerImage}
-              alt=""
-            />
+
+          <div className="floating-card floating-card-bottom">
+            <span className="floating-icon">₹</span>
+            <div>
+              <strong>Data Driven</strong>
+              <small>Responsible lending</small>
+            </div>
           </div>
+
+        </section>
+
+      </main>
+
+      {/* FEATURES */}
+      <section className="features-section">
+
+        <div className="section-heading">
+          <p>WHY BIZFIZ</p>
+          <h2>Everything needed for smarter lending.</h2>
         </div>
- 
+
+        <div className="features-grid">
+
+          <div className="feature-card">
+            <div className="feature-number">01</div>
+            <h3>Simple Application</h3>
+            <p>
+              Submit business, financial and loan information through
+              a structured digital application.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-number">02</div>
+            <h3>Smart Risk Assessment</h3>
+            <p>
+              Business information can be evaluated using structured
+              financial and risk indicators.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-number">03</div>
+            <h3>Transparent Review</h3>
+            <p>
+              Bank administrators can review applications and make
+              informed lending decisions.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-number">04</div>
+            <h3>Track Your Application</h3>
+            <p>
+              Applicants can follow their loan application and monitor
+              its current status.
+            </p>
+          </div>
+
+        </div>
+
       </section>
 
+      {/* BOTTOM CTA */}
+      <section className="bottom-cta">
 
-    
-      <div className="do-new" id="how-it-works" style={{ overflowX: 'hidden' }}>
-        <div className="title">
-          <h2>HOW IT WORKS</h2>
-
+        <div>
+          <p>READY TO GET STARTED?</p>
+          <h2>Turn your business plans into momentum.</h2>
         </div>
-        <h4 style={{paddingLeft:'90px'}}>⚡For Lenders</h4> <br/>
-        <div className="about-container" style={{ overflowX: 'hidden' }}>
-         
-          <div className="row">
-            <div className="col">
 
-              <div className="card" data-aos="flip-left" data-aos-duration="6000">
-                <p className="step-indicator">Step 1</p>
-                <div className="face face1">
-                  <div className="content">
-                    <img 
-                    src={createPageImage} alt=""></img>
-                    <h3>Apply</h3>
-                  </div>
-                </div>
-                <div className="face face2">
-                  <div className="content-text">
-                    <p>.</p>
-                  </div>
-                </div>
-              </div>
+        <button
+          className="primary-button"
+          onClick={() => navigate("/login")}
+        >
+          Start Your Application
+          <span>→</span>
+        </button>
 
-            </div>
-
-            <div className="col">
-              <div className="card" data-aos="flip-up">
-                <p className="step-indicator">Step 2</p>
-                <div className="face face1">
-                  <div className="content">
-                    <h3>Wait For Approval </h3>
-                    <img src={shareLinkImage} alt=" link with others"/>
-
-                  </div>
-                </div>
-                <div className="face face2">
-                  <div className="content-text">
-                    <p>.</p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-
-            
-
-          </div>
-        </div>
-        <br/>
-        <h4 style={{paddingLeft:'90px'}}> ⚡For Bank Admin</h4> <br/>
-        <div className="about-container" style={{ overflowX: 'hidden' }}>
-          <div className="row">
-            <div className="col">
-
-              <div className="card" data-aos="flip-left" data-aos-duration="6000">
-                <p className="step-indicator">Step 1</p>
-                <div className="face face1">
-                  <div className="content">
-                    <img 
-                    src={shareLinkImage} alt="page"></img>
-                    <h3>Check Requests</h3>
-                  </div>
-                </div>
-                <div className="face face2">
-                  <div className="content-text">
-                    <p>.</p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="col">
-              <div className="card" data-aos="flip-up">
-                <p className="step-indicator">Step 2</p>
-                <div className="face face1">
-                  <div className="content">
-                    <h3>Evalute</h3>
-                    <img src={createPageImage} alt="ink with others"/>
-
-                  </div>
-                </div>
-                <div className="face face2">
-                  <div className="content-text">
-                    <p></p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-
-            <div className="col" data-aos="flip-right">
-              <div className="card">
-                <p className="step-indicator">Step 3</p>
-                <div className="face face1">
-                  <div className="content">
-                    <img 
-                    src={ConnectAllImage} alt="Share link and connect with all"></img>
-                    <h3>Accept/Reject</h3>
-                  </div>
-                </div>
-                <div className="face face2">
-                  <div className="content-text">
-                    <p></p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-   
-
-      <footer>
-    <div className="container" id="contact">
-      <div className="row justify-content-center">
-
-        <div className="col-xs-12 col-sm-6 col-md-6 col-lg-6 col-xl-6">
-          <div className="footer-logo">
-            <img src={'https://i.ibb.co/r5YwMmr/logo-Imgur.png'} alt="logo"></img>
-            <h1 className="logo-title">BIZFIZ</h1>
-            <p>Making Lending Easy</p>
-            <br/>
-            <p>MADE WITH ❤️ @ Fintech Open Month Hackathon</p>
-            <br/>
-            <p>BY SUPERDUPER</p>
-
-          </div>
-
-        </div>
-        
-     
-      </div>
-
-
-
-    </div>
-  </footer>
-
-
+      </section>
 
     </div>
   );

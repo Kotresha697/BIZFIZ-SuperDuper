@@ -1,40 +1,39 @@
-import * as React from 'react';
-
+﻿import * as React from 'react';
 import './index.css'
 
-export default function NavBar({ title, authed, onLogout }) {
+const ADMIN_PORTAL_URL =
+  (process.env.REACT_APP_ADMIN_PORTAL_URL && process.env.REACT_APP_ADMIN_PORTAL_URL.trim()) ||
+  'http://localhost:3001';
+
+export default function NavBar({ authed, onLogout }) {
   return (
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
+    <nav className="user-nav" aria-label="BizFiz borrower navigation">
+      <div>
+        <a className="brand-lockup" href="/">
+          <span className="brand-mark">BF</span>
+          <span>
+            <strong>BIZFIZ</strong>
+            <small>{authed ? 'Borrower Portal' : 'Business Lending Platform'}</small>
+          </span>
+        </a>
 
-        <div class="navbar-brand d-flex" style={{width:'100%'}} >
-          <img src="https://i.ibb.co/6vYxk8n/logo.png" class="h-8" style={{width:'40px'}} alt="..."></img>
-          <span className="mx-1 " style={{paddingTop:'5px'}}>BIZFIZ</span>
-          <div className=" nav-title  mx-auto">  {title}</div>
+        <div className="user-nav-links">
+          {authed ? (
+            <React.Fragment>
+              <a href="/">Dashboard</a>
+              <a href="/apply">Apply for Loan</a>
+              <a href="/#applications">My Applications</a>
+              <button type="button" onClick={onLogout}>Logout</button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <a href="/">Home</a>
+              <a href="/login">User Login</a>
+              <a href={ADMIN_PORTAL_URL}>Bank Admin Login</a>
+            </React.Fragment>
+          )}
         </div>
-
-        {authed ? (
-          <button
-            type="button"
-            onClick={onLogout}
-            style={{
-              flexShrink: 0,
-              border: 0,
-              borderRadius: '8px',
-              padding: '8px 14px',
-              color: '#fff',
-              background: '#4f46e5',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer'
-            }}
-          >
-            Log out
-          </button>
-        ) : null}
-
       </div>
     </nav>
   )
 }
-

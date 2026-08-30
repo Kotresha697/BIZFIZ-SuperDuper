@@ -1,33 +1,55 @@
-from fastapi import FastAPI, Request, Body, Depends, HTTPException
+from fastapi import (
+    FastAPI,
+    Request,
+    Body,
+    Depends,
+    HTTPException,
+)
+
 from fastapi.responses import JSONResponse
+
 from pydantic import BaseModel
+
 from fastapi.encoders import jsonable_encoder
+
 from typing import Optional, List
+
 import uvicorn
-from fastapi.middleware.cors import CORSMiddleware
 import pymongo
 import requests
 import json
 import os
 import secrets
 import pandas as pd
-from bson.objectid import ObjectId
 import time
 import enum
+
+from bson.objectid import ObjectId
+
 from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
 
-# Support both launch styles so the entry point is consistent everywhere:
-#   * package style  ->  `uvicorn backend.main:app`  (from the repo root)
-#   * module style   ->  `uvicorn main:app`          (from inside backend/)
-try:
-    from .ratings import competitor_analysis, oppurtunity_rating, sectoral_analysis, relative_prosperity, ease_of_business
-    from . import auth
-    from .scoring_service import calculate_bizfiz_score
-except ImportError:  # pragma: no cover - fallback when imported as a top-level module
-    from ratings import competitor_analysis, oppurtunity_rating, sectoral_analysis, relative_prosperity, ease_of_business
-    import auth
-    from scoring_service import calculate_bizfiz_score
+from fastapi.middleware.cors import CORSMiddleware
+
+
+# ============================================================
+# BIZFIZ BACKEND IMPORTS
+# ============================================================
+
+from .ratings import (
+    competitor_analysis,
+    opportunity_rating,
+    sectoral_analysis,
+    relative_prosperity,
+    ease_of_business,
+)
+
+from . import auth
+
+from .scoring_service import (
+    calculate_bizfiz_score
+)
 
 app = FastAPI()
 

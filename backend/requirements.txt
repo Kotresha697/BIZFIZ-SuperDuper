@@ -10,3 +10,4 @@ numpy
 dnspython
 pandas
 python-dateutil
+python-dotenv
