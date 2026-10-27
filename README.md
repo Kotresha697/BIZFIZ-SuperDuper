@@ -1,6 +1,5 @@
 
 
-<img width="814" alt="image" src="https://user-images.githubusercontent.com/31367960/158437959-f3b0f0af-6a77-4edf-8f80-9fce603c8f35.png">
 
 
 ###  BIZ FIZ : A Business Sensitive Metric to simplify Loan Disbursement Process.
